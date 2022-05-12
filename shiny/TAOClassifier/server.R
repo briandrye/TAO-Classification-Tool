@@ -8,9 +8,8 @@
 #
 
 library(shiny)
-#library('sf')
-library('terra')
-library('stringr')
+library(terra)
+library(stringr)
 
 
 
@@ -116,8 +115,8 @@ shinyServer(function(input, output) {
         croppedImagesOutputFolder = input$outputFolder
         withProgress(message = 'Processing...', value = 0, {
           # load *_Polygon.shp files
-          # \\172.25.182.82\pfc-frl\01_LiDAR_data\Processed_FUSION\California\SSARR_2020_rerun\Segments_0p75METERS
-          # copied some folders from network to local computer for testing
+          # ...\01_LiDAR_data\Processed_FUSION\California\SSARR_2020_rerun\Segments_0p75METERS
+          # recommend: copy files to local computer first
           listOfPolygonFiles <-
             list.files(
               path = input$shapeFiles,
@@ -203,7 +202,7 @@ shinyServer(function(input, output) {
           sampledHighPointSpatVector <- project(sampledHighPointSpatVector, crsSpatRaster)
           
           # find polygons in image files... want to store:
-          # i - this is the index into listOfImageFiles (so we can get file name)
+          # i - this is the index into listOfImageFiles (so we can get the file name)
           # j - this will be a list of indexes into sampledPolygonsSpatVector
           
           arrayOfImagesThatContainPolygons <- array()

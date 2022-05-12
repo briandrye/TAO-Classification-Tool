@@ -5,18 +5,19 @@ Classify Tree Approximate Objects (TAO) as live/dead.
 ## Copy data files to local computer  
 
 ### Shapefiles (.shp)  
-copy folder that contains the TAO polygons and high points 
-note: the .shp files can be in nested folders
+copy folder from network drive that contains the TAO polygons and high points 
+note: the .shp files can be in nested folders  
+Example: Segments_0p75METERS
 
 ### Imagery files  (.tif)
-copy folder that contains imagery files 
+copy folder from network drive that contains imagery files 
 note: the .tif files can be in nested folders  
+Example: NAIP_2020\NAIP_4Band_2020\imagery
 
 ## Configuration
-
 install RStudio  
 install shiny package  
-
+clone repository to local machine  
 Open ui.R and server.R in RStudio  
 Choose "Run Application" in RStudio  
 
