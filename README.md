@@ -16,7 +16,7 @@ Example: NAIP_2020\NAIP_4Band_2020\imagery
 
 ## Configuration
 install RStudio  
-install shiny package  
+install packages: shiny, stringr, terra  
 clone repository to local machine  
 Open ui.R and server.R in RStudio  
 Choose "Run Application" in RStudio  
