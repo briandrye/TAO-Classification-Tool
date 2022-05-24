@@ -32,10 +32,11 @@ Click "Preprocess Imagery" button
 (this will create small .png files for each TAO polygon and create mortality.csv)  
 
 ## Application: Step 2 - Classification  
-Click "Load CSV" button  
-(the first image 1.png should be displayed)  
-Use the Live/Dead buttons to classify the TAO Polygon  
-(mortality.csv is updated/saved as each Polygon is classified)  
+Click "Load mortality.csv" button  
+(the first unclassified images should be displayed)  
+Use the dropdown to classify the TAO Polygon  
+Click "Updfate mortality.csv" 
+(mortality.csv is updated/saved)  
 
 
 
