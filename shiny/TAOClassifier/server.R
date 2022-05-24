@@ -8,6 +8,7 @@
 #
 
 library(shiny)
+library(DT)
 library(terra)
 library(stringr)
 
@@ -75,13 +76,23 @@ getSubtile <- function(filename)
 shinyServer(function(input, output) {
   
     rv <- reactiveValues(
-      currentCroppedImageIndex = 1,
-      csvDf = data.frame()
+      currentCroppedImageIndex = 0,
+      csvDf = data.frame(),
+      bdtest = 0
       )
 
     observeEvent(input$loadCsv, {
       rv$csvDf <- read.csv(paste0(input$outputFolder, "mortality.csv"), header=TRUE, sep=",")
-      rv$currentCroppedImageIndex = 1
+      # adjust index to the first row that doesn't have IsLive set
+      naIndexes = which(is.na(rv$csvDf["IsLive"]))
+      if(length(naIndexes) > 0)
+      {
+        rv$currentCroppedImageIndex = naIndexes[1]
+      }
+      else
+      {
+        rv$currentCroppedImageIndex = 1
+      }
     })
 
     observeEvent(input$firstImage, {
@@ -96,24 +107,24 @@ shinyServer(function(input, output) {
     observeEvent(input$lastImage, {
       rv$currentCroppedImageIndex <- nrow(rv$csvDf)
     })
-    observeEvent(input$liveButton, {
-      rv$csvDf[rv$currentCroppedImageIndex, "IsLive"] = "1"
-      write.table(rv$csvDf, paste0(croppedImagesOutputFolder, "mortality.csv"), row.names=FALSE, sep=",")
-      rv$currentCroppedImageIndex <- rv$currentCroppedImageIndex + 1
-    })
-    observeEvent(input$deadButton, {
-      rv$csvDf[rv$currentCroppedImageIndex, "IsLive"] = "0"
-      write.table(rv$csvDf, paste0(croppedImagesOutputFolder, "mortality.csv"), row.names=FALSE, sep=",")
-      rv$currentCroppedImageIndex <- rv$currentCroppedImageIndex + 1
+    observeEvent(input$saveMortality, {
+      if(length(rv$csvDf) > 0)
+      {
+        rv$csvDf[rv$currentCroppedImageIndex, "IsLive"] = input$mortalityStatus
+        write.table(rv$csvDf, paste0(input$outputFolder, "mortality.csv"), row.names=FALSE, sep=",")
+        rv$currentCroppedImageIndex <- rv$currentCroppedImageIndex + 1
+      }
+      else
+      {
+        print("Error: mortality.csv not loaded. Click 'Load mortality.csv' button. ")
+      }
     })
     
     observeEvent(input$createImages, {
-      if(input$createImages > 0)
-      {
         startTime = Sys.time()
         req(input$outputFolder, input$shapeFiles, input$imageFiles, input$margin)
         croppedImagesOutputFolder = input$outputFolder
-        withProgress(message = 'Processing...', value = 0, {
+        withProgress(message = 'Processing...', max=3783, value = 0, {
           # load *_Polygon.shp files
           # ...\01_LiDAR_data\Processed_FUSION\California\SSARR_2020_rerun\Segments_0p75METERS
           # recommend: copy files to local computer first
@@ -139,14 +150,35 @@ shinyServer(function(input, output) {
             print("length of Polygon file list doesn't match length of High Point files")
             return(NULL)
           }
+
+          # change sample strategy... 
+          # if we want 300 polygons
+          # select 300 polygon files, then select 1 polygon from each?
           
+          # or if sample # is greater than file #, take x samples from each file
+          
+          # user could pick how many samples then want from each polygon file (2 each)
+          # then they could just classify as many as they want from the spreadsheet
+          # quit whenever
+          
+          
+          
+                    
           # array to hold number of polygons in each shp file
-          polygonCounts <-array(dim = length(listOfPolygonFiles))
+          polygonCounts <- array(dim = length(listOfPolygonFiles))
           
-          # save counts
-          for (i in 1:length(listOfPolygonFiles))
+          # print(Sys.time())
+          # polygonCounts <- sapply(listOfHighPointFiles, function(x){
+          #   nrow(vect(x))
+          # })
+          # print(Sys.time())
+          
+          # save counts (todo: fix this so it is fast. 5 files a second)
+          tempLength = length(listOfPolygonFiles)
+          for (i in 1:tempLength)
           {
-            tempSpatVector <- vect(listOfPolygonFiles[i])
+            setProgress(3783*(i/tempLength), detail = paste0("sampling: ", i))             
+            tempSpatVector <- vect(listOfHighPointFiles[i])
             polygonCounts[i] <- nrow(tempSpatVector)
           }
           
@@ -220,6 +252,7 @@ shinyServer(function(input, output) {
             # highpoint (polygon) might be in more than one image
             # once found, mark the high point as found
             tempExtent <- ext(tempSpatRaster)
+            #print(tempExtent)
             polygons <- vector()
             
             for (j in 1:nrow(highPoints))
@@ -228,6 +261,8 @@ shinyServer(function(input, output) {
               {
                 next
               }
+              #print(highPoints[j, 'x'])
+              #print(highPoints[j, 'y'])
               if (tempExtent$xmin < highPoints[j, 'x'] &&
                   tempExtent$xmax > highPoints[j, 'x'] &&
                   tempExtent$ymin < highPoints[j, 'y'] &&
@@ -256,6 +291,13 @@ shinyServer(function(input, output) {
           # also create a csv file 
           csvDataframe = data.frame(matrix(nrow=0, ncol=8))
           names(csvDataframe) <- c("Block","Column","Row","Subtile","Basin","IsLive","FilePath","NAIPYear")
+          
+          # polygons may not be found in image files... 
+          # if not found, what should happen?
+          if(length(arrayOfImagesThatContainPolygons) == 0)
+          {
+            print("Error: polygons not found in image files")
+          }
           
           for (i in 1:length(arrayOfImagesThatContainPolygons))
           {
@@ -315,20 +357,35 @@ shinyServer(function(input, output) {
         endTime = Sys.time()
         totalTime = endTime - startTime
         print(paste("done preprocessing:", totalTime))
-      }
-      else
-      {
-        print("initial state")
-      }
+        rv$bdtest = 1
     })
   
     output$showCroppedImage <- renderImage({
-      imageFile = paste0(input$outputFolder, rv$currentCroppedImageIndex, ".png")
-      list(src = imageFile, width=400, height=400)
+      if(rv$currentCroppedImageIndex > 0)
+      {
+        imageFile = paste0(input$outputFolder, rv$currentCroppedImageIndex, ".png")
+        list(src = imageFile, width=400, height=400)
+      }
+      else
+      {
+        list(src = '')
+      }
     }, deleteFile = FALSE)
     
     output$csvPath <- renderText({
-      paste0(input$outputFolder, "mortality.csv")
+      if(rv$bdtest)
+      {
+        print("checking for mortality.csv")
+      }
+      tempPath = paste0(input$outputFolder, "mortality.csv")
+      if(file.exists(tempPath))
+      {
+        "mortality.csv found in output folder"
+      }
+      else
+      {
+        "mortality.csv not found in output folder"
+      }
     })
     output$croppedImageIndex <- renderText({
       paste("Index: ", rv$currentCroppedImageIndex, "Live: ", toString(rv$csvDf[rv$currentCroppedImageIndex, "IsLive"]))
@@ -338,7 +395,7 @@ shinyServer(function(input, output) {
       paste0("Image: ",input$outputFolder, rv$currentCroppedImageIndex, ".png")
     })
     
-    output$csvTable <- renderDataTable({
+    output$csvTable <- shiny::renderDataTable({
       if(nrow(rv$csvDf))
       {
         tempdf <- cbind(rownames(rv$csvDf), rv$csvDf[, 1:6])
@@ -350,14 +407,8 @@ shinyServer(function(input, output) {
         rv$csvDf
       }
     }, options=list(pageLength=5, lengthMenu=c(5, 100))
+     , callback = JS(paste0('setTimeout(function() {table.page(', (rv$currentCroppedImageIndex - 1)/5,').draw(false);}, 100);'))
     )
 
-#    output$polygonInfo <- renderTable({
-#      if(nrow(rv$csvDf))
-#      {
-#        rv$csvDf[rv$currentCroppedImageIndex, ]
-#        rv$csvDf
-#      }
-#    })
 
 })
