@@ -21,12 +21,12 @@ shinyUI(fluidPage(
           wellPanel(
             h4("Inputs"),
             # textInput("shapeFiles", "Folder containing shape files (.shp)", "D:/Segments_0p75METERS/"),
-            textInput("shapeFiles", "Folder containing shape files (.shp)", "D:/bdtest/"),
+            textInput("shapeFiles", "Folder containing shape files (.shp)", "D:/notfound/"),
             textInput("imageFiles", "Folder containing imagery files (.tif)", "C:/Users/bdrye/Downloads/NAIP_2020/NAIP_4Band_2020/imagery"),
           ),
           wellPanel(
             h4("Configuration"),
-            textInput("sampleSize", "Sample size", "300"),
+            textInput("sampleSize", "Sample size", "30"),
             sliderInput("margin",
                         "Margin:",
                         min = 10,
@@ -95,11 +95,11 @@ shinyUI(fluidPage(
                 actionButton("saveMortality", "Update mortality.csv"),
               )
             ),
-            fluidRow(
-              wellPanel(
-                dataTableOutput("csvTable"),
-              )
-            )
+            # fluidRow(
+            #   wellPanel(
+            #     dataTableOutput("csvTable"),
+            #   )
+            # )
           )
         )
     )

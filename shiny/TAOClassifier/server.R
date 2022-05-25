@@ -8,7 +8,7 @@
 #
 
 library(shiny)
-library(DT)
+#library(DT)
 library(terra)
 library(stringr)
 
@@ -78,7 +78,7 @@ shinyServer(function(input, output) {
     rv <- reactiveValues(
       currentCroppedImageIndex = 0,
       csvDf = data.frame(),
-      bdtest = 0
+      lookForCsv = 0
       )
 
     observeEvent(input$loadCsv, {
@@ -99,20 +99,34 @@ shinyServer(function(input, output) {
       rv$currentCroppedImageIndex <- 1
     })
     observeEvent(input$previousImage, {
-      rv$currentCroppedImageIndex <- rv$currentCroppedImageIndex - 1
+      if(rv$currentCroppedImageIndex > 1)
+      {
+        rv$currentCroppedImageIndex <- rv$currentCroppedImageIndex - 1
+      }
     })
     observeEvent(input$nextImage, {
-      rv$currentCroppedImageIndex <- rv$currentCroppedImageIndex + 1
+      if(rv$currentCroppedImageIndex < nrow(rv$csvDf))
+      {
+        rv$currentCroppedImageIndex <- rv$currentCroppedImageIndex + 1
+      }
     })
     observeEvent(input$lastImage, {
       rv$currentCroppedImageIndex <- nrow(rv$csvDf)
     })
     observeEvent(input$saveMortality, {
-      if(length(rv$csvDf) > 0)
+      if(nrow(rv$csvDf) > 0)
       {
         rv$csvDf[rv$currentCroppedImageIndex, "IsLive"] = input$mortalityStatus
         write.table(rv$csvDf, paste0(input$outputFolder, "mortality.csv"), row.names=FALSE, sep=",")
-        rv$currentCroppedImageIndex <- rv$currentCroppedImageIndex + 1
+        if(rv$currentCroppedImageIndex < nrow(rv$csvDf))
+        {
+          rv$currentCroppedImageIndex <- rv$currentCroppedImageIndex + 1
+        }
+        else
+        {
+          print("no more polygons to classify")
+          rv$currentCroppedImageIndex <- nrow(rv$csvDf)
+        }
       }
       else
       {
@@ -124,7 +138,7 @@ shinyServer(function(input, output) {
         startTime = Sys.time()
         req(input$outputFolder, input$shapeFiles, input$imageFiles, input$margin)
         croppedImagesOutputFolder = input$outputFolder
-        withProgress(message = 'Processing...', max=3783, value = 0, {
+        withProgress(message = 'Processing...', max=5, value = 1, {
           # load *_Polygon.shp files
           # ...\01_LiDAR_data\Processed_FUSION\California\SSARR_2020_rerun\Segments_0p75METERS
           # recommend: copy files to local computer first
@@ -167,17 +181,11 @@ shinyServer(function(input, output) {
           # array to hold number of polygons in each shp file
           polygonCounts <- array(dim = length(listOfPolygonFiles))
           
-          # print(Sys.time())
-          # polygonCounts <- sapply(listOfHighPointFiles, function(x){
-          #   nrow(vect(x))
-          # })
-          # print(Sys.time())
-          
-          # save counts (todo: fix this so it is fast. 5 files a second)
+          # save counts (todo: fix this so it is fast. currently ~5 files a second)
           tempLength = length(listOfPolygonFiles)
+          setProgress(2, detail = "sampling...")
           for (i in 1:tempLength)
           {
-            setProgress(3783*(i/tempLength), detail = paste0("sampling: ", i))             
             tempSpatVector <- vect(listOfHighPointFiles[i])
             polygonCounts[i] <- nrow(tempSpatVector)
           }
@@ -210,7 +218,6 @@ shinyServer(function(input, output) {
             tempHighPointSpatVector <- vect(listOfHighPointFiles[i])
             tempSampledHighPointSpatVector <- tempHighPointSpatVector[tempSampleRows, ]
             sampledHighPointSpatVector <- rbind(sampledHighPointSpatVector, tempSampledHighPointSpatVector)
-            setProgress((1/10)*(i/length(listOfPolygonFiles)), detail = paste0("sampling ", i, "/", length(listOfPolygonFiles)))
           }
           
           # confirm that we have same number of geometries... sampling is done
@@ -227,48 +234,45 @@ shinyServer(function(input, output) {
               ignore.case = TRUE,
               recursive = TRUE
             )
-          
-          # use CRS (from first raster) to update CRS of Polygons and HighPoints
-          crsSpatRaster <- rast(listOfImageFiles[1])
-          sampledPolygonSpatVector <- project(sampledPolygonSpatVector, crsSpatRaster)
-          sampledHighPointSpatVector <- project(sampledHighPointSpatVector, crsSpatRaster)
-          
+
           # find polygons in image files... want to store:
           # i - this is the index into listOfImageFiles (so we can get the file name)
           # j - this will be a list of indexes into sampledPolygonsSpatVector
-          
+
           arrayOfImagesThatContainPolygons <- array()
           listOfPolygonsInImage <- list()
           arrayIndex = 1
+          highPointsFound = array(0, dim=length(sampledHighPointSpatVector))
           
-          highPoints <- geom(sampledHighPointSpatVector, df=TRUE)
-          highPoints[ , 'found'] <- 0 
+          setProgress(3, detail = "locating polygons in images")
           for (i in 1:length(listOfImageFiles))
           {
+            # each tif file may have a different CRS... 
             tempSpatRaster <- rast(listOfImageFiles[i])
+            sampledPolygonSpatVector <- project(sampledPolygonSpatVector, tempSpatRaster)
+            sampledHighPointSpatVector <- project(sampledHighPointSpatVector, tempSpatRaster)
+            highPoints <- geom(sampledHighPointSpatVector, df=TRUE)
+
             # look for sampled high points inside the image extent
             # note: simple search... just loop through each high point. 
             # if we find all points, quit searching
             # highpoint (polygon) might be in more than one image
             # once found, mark the high point as found
             tempExtent <- ext(tempSpatRaster)
-            #print(tempExtent)
             polygons <- vector()
             
             for (j in 1:nrow(highPoints))
             {
-              if(highPoints[j, "found"] == 1)
+              if(highPointsFound[j] == 1)
               {
                 next
               }
-              #print(highPoints[j, 'x'])
-              #print(highPoints[j, 'y'])
               if (tempExtent$xmin < highPoints[j, 'x'] &&
                   tempExtent$xmax > highPoints[j, 'x'] &&
                   tempExtent$ymin < highPoints[j, 'y'] &&
                   tempExtent$ymax > highPoints[j, 'y'])
               {
-                highPoints[j, "found"] <- 1
+                highPointsFound[j] <- 1
                 polygons <- append(polygons, j)
               }
             }
@@ -278,13 +282,12 @@ shinyServer(function(input, output) {
               arrayOfImagesThatContainPolygons[arrayIndex] <- i
               listOfPolygonsInImage[[arrayIndex]] <- polygons
               arrayIndex <- arrayIndex + 1
-              if(all(highPoints[, "found"] == 1))
+              if(all(highPointsFound == 1))
               {
+                print("all highpoints found.")
                 break
               }
             }
-            setProgress(1/10 + (1/10)* (i/length(listOfImageFiles)), 
-                        detail = "locating polygons in images")
           }
           
           # save cropped images (raster plus polygon) as .png
@@ -299,6 +302,7 @@ shinyServer(function(input, output) {
             print("Error: polygons not found in image files")
           }
           
+          setProgress(4, detail = "saving cropped images")
           for (i in 1:length(arrayOfImagesThatContainPolygons))
           {
             imageFileIndex = arrayOfImagesThatContainPolygons[i]
@@ -307,6 +311,9 @@ shinyServer(function(input, output) {
             
             tempSpatRaster <-
               rast(listOfImageFiles[imageFileIndex])
+            # set CRS to match current image raster
+            sampledPolygonSpatVector <- project(sampledPolygonSpatVector, tempSpatRaster)
+            
             tempPolygonsIndexes <- listOfPolygonsInImage[[i]]
             
             # make a dataframe to save as a csv
@@ -338,16 +345,13 @@ shinyServer(function(input, output) {
               tempCsvDataframe[j, "Row"] <- sampledPolygonSpatVector[polygonIndex]$Row
               tempCsvDataframe[j, "Subtile"] <- sampledPolygonSpatVector[polygonIndex]$Subtile
               tempCsvDataframe[j, "Basin"] <- sampledPolygonSpatVector[polygonIndex]$BasinID
-#              tempCsvDataframe[j, "FilePath"] <- listOfImageFiles[imageFileIndex]
+              tempCsvDataframe[j, "FilePath"] <- listOfImageFiles[imageFileIndex]
 #              tempCsvDataframe[j, "NAIPYear"] <- NA
               
             }
             
             csvDataframe <- rbind(csvDataframe, tempCsvDataframe)
-            setProgress((2/10) + (i/length(arrayOfImagesThatContainPolygons) *
-                                                (8 / 10)),
-                        detail = paste("cropping images...", i)
-            )
+            setProgress(5, detail = "Step 1 finished")
           }
         })
         # output the CSV file
@@ -357,7 +361,7 @@ shinyServer(function(input, output) {
         endTime = Sys.time()
         totalTime = endTime - startTime
         print(paste("done preprocessing:", totalTime))
-        rv$bdtest = 1
+        rv$lookForCsv = 1
     })
   
     output$showCroppedImage <- renderImage({
@@ -373,9 +377,10 @@ shinyServer(function(input, output) {
     }, deleteFile = FALSE)
     
     output$csvPath <- renderText({
-      if(rv$bdtest)
+      if(rv$lookForCsv)
       {
         print("checking for mortality.csv")
+        rv$lookForCsv = 0
       }
       tempPath = paste0(input$outputFolder, "mortality.csv")
       if(file.exists(tempPath))
@@ -388,27 +393,27 @@ shinyServer(function(input, output) {
       }
     })
     output$croppedImageIndex <- renderText({
-      paste("Index: ", rv$currentCroppedImageIndex, "Live: ", toString(rv$csvDf[rv$currentCroppedImageIndex, "IsLive"]))
+      paste(rv$currentCroppedImageIndex, "/", nrow(rv$csvDf), " : ", toString(rv$csvDf[rv$currentCroppedImageIndex, "IsLive"]))
     })
     
     output$croppedImagePath <- renderText({
       paste0("Image: ",input$outputFolder, rv$currentCroppedImageIndex, ".png")
     })
     
-    output$csvTable <- shiny::renderDataTable({
-      if(nrow(rv$csvDf))
-      {
-        tempdf <- cbind(rownames(rv$csvDf), rv$csvDf[, 1:6])
-        colnames(tempdf)[1] <- "index"
-        tempdf
-      }
-      else
-      {
-        rv$csvDf
-      }
-    }, options=list(pageLength=5, lengthMenu=c(5, 100))
-     , callback = JS(paste0('setTimeout(function() {table.page(', (rv$currentCroppedImageIndex - 1)/5,').draw(false);}, 100);'))
-    )
+#     output$csvTable <- shiny::renderDataTable({
+#       if(nrow(rv$csvDf))
+#       {
+#         tempdf <- cbind(rownames(rv$csvDf), rv$csvDf[, 1:6])
+#         colnames(tempdf)[1] <- "index"
+#         tempdf
+#       }
+#       else
+#       {
+#         rv$csvDf
+#       }
+#     }, options=list(pageLength=5, lengthMenu=c(5, 100))
+# #     , callback = JS(paste0('setTimeout(function() {table.page(', (rv$currentCroppedImageIndex - 1)/5,').draw(false);}, 100);'))
+#     )
 
 
 })
