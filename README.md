@@ -33,9 +33,9 @@ Click "Preprocess Imagery" button
 
 ## Application: Step 2 - Classification  
 Click "Load mortality.csv" button  
-(the first unclassified images should be displayed)  
+(the first unclassified image should be displayed)  
 Use the dropdown to classify the TAO Polygon  
-Click "Updfate mortality.csv" 
+Click "Update mortality.csv" 
 (mortality.csv is updated/saved)  
 
 
