@@ -83,8 +83,8 @@ shinyServer(function(input, output) {
 
     observeEvent(input$loadCsv, {
       rv$csvDf <- read.csv(paste0(input$outputFolder, "mortality.csv"), header=TRUE, sep=",")
-      # adjust index to the first row that doesn't have IsLive set
-      naIndexes = which(is.na(rv$csvDf["IsLive"]))
+      # adjust index to the first row that doesn't have MortalityStatus set
+      naIndexes = which(is.na(rv$csvDf["MortalityStatus"]))
       if(length(naIndexes) > 0)
       {
         rv$currentCroppedImageIndex = naIndexes[1]
@@ -116,7 +116,9 @@ shinyServer(function(input, output) {
     observeEvent(input$saveMortality, {
       if(nrow(rv$csvDf) > 0)
       {
-        rv$csvDf[rv$currentCroppedImageIndex, "IsLive"] = input$mortalityStatus
+        rv$csvDf[rv$currentCroppedImageIndex, "MortalityStatus"] = input$mortalityStatus
+        rv$csvDf[rv$currentCroppedImageIndex, "Nadir"] = input$nadir
+        rv$csvDf[rv$currentCroppedImageIndex, "Error"] = input$error
         write.table(rv$csvDf, paste0(input$outputFolder, "mortality.csv"), row.names=FALSE, sep=",")
         if(rv$currentCroppedImageIndex < nrow(rv$csvDf))
         {
@@ -292,8 +294,8 @@ shinyServer(function(input, output) {
           
           # save cropped images (raster plus polygon) as .png
           # also create a csv file 
-          csvDataframe = data.frame(matrix(nrow=0, ncol=8))
-          names(csvDataframe) <- c("Block","Column","Row","Subtile","Basin","IsLive","FilePath","NAIPYear")
+          csvDataframe = data.frame(matrix(nrow=0, ncol=10))
+          names(csvDataframe) <- c("Block","Column","Row","Subtile","Basin","MortalityStatus","Nadir","Error","FilePath","NAIPYear")
           
           # polygons may not be found in image files... 
           # if not found, what should happen?
@@ -317,9 +319,9 @@ shinyServer(function(input, output) {
             tempPolygonsIndexes <- listOfPolygonsInImage[[i]]
             
             # make a dataframe to save as a csv
-            # Block, Column, Row, Subtile, Basin, IsLive, FilePath, NAIPYear
-            tempCsvDataframe = data.frame(matrix(nrow=length(tempPolygonsIndexes), ncol=8))
-            names(tempCsvDataframe) <- c("Block","Column","Row","Subtile","Basin","IsLive","FilePath","NAIPYear")
+            # Block, Column, Row, Subtile, Basin, MortalityStatus, FilePath, NAIPYear
+            tempCsvDataframe = data.frame(matrix(nrow=length(tempPolygonsIndexes), ncol=10))
+            names(tempCsvDataframe) <- c("Block","Column","Row","Subtile","Basin","MortalityStatus","Nadir","Error", "FilePath","NAIPYear")
             
             for (j in 1:length(tempPolygonsIndexes))
             {
@@ -393,7 +395,7 @@ shinyServer(function(input, output) {
       }
     })
     output$croppedImageIndex <- renderText({
-      paste(rv$currentCroppedImageIndex, "/", nrow(rv$csvDf), " : ", toString(rv$csvDf[rv$currentCroppedImageIndex, "IsLive"]))
+      paste(rv$currentCroppedImageIndex, "/", nrow(rv$csvDf), " : ", toString(rv$csvDf[rv$currentCroppedImageIndex, "MortalityStatus"]))
     })
     
     output$croppedImagePath <- renderText({

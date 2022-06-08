@@ -92,6 +92,10 @@ shinyUI(fluidPage(
                               "Unknown" = "Unknown",
                               "Yellowing tree, multiple" = "yellowing_tree_multiple",
                               "Yellowing tree, recent dead" = "yellowing_tree_recent_dead")),
+                selectInput("nadir", "Nadir",
+                            c("On" = "on", "Tilt" = "tilt", "Off" = "off")),
+                selectInput("error", "Error",
+                            c("Main, Oversegmentation" = "main_oversegmentation", "Associate, Oversegmentation" = "associate_oversegmentaion")),
                 actionButton("saveMortality", "Update mortality.csv"),
               )
             ),
