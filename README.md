@@ -7,16 +7,16 @@ Classify Tree Approximate Objects (TAO) as live/dead.
 ### Shapefiles (.shp)  
 copy folder from network drive that contains the TAO polygons and high points 
 note: the .shp files can be in nested folders  
-Example: Z:\01_LiDAR_data\Processed_FUSION\California\SSARR_2020_rerun\Segments_0p75METERS
+Example: Z:\01_LiDAR_data\Processed_FUSION\California\SSARR_2020_rerun\Segments_0p75METERS => D:\Segments_0p75METERS
 
 ### Imagery files (.tif)
 copy folder from network drive that contains imagery files 
 note: the .tif files can be in nested folders  
-Example: NAIP_2020\NAIP_4Band_2020\imagery
+Example: NAIP_2020\NAIP_4Band_2020\imagery => D:\NAIP_4Band_2020\imagery
 
 ### Elevation file (.img)
 copy file from network drive that contains raster of elevation info  
-Example: Z:\01_LiDAR_data\Processed_FUSION\California\SSARR_2020_rerun\TopoMetrics_30METERS\topo_elevation_15M_30METERS.img
+Example: Z:\01_LiDAR_data\Processed_FUSION\California\SSARR_2020_rerun\TopoMetrics_30METERS\topo_elevation_15M_30METERS.img => D:\TopoMetrics_30METERS/topo_elevation_15M_30METERS.img  
 
 ## Configuration
 install RStudio  
