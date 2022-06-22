@@ -19,35 +19,12 @@ shinyUI(fluidPage(
     sidebarLayout(
         sidebarPanel(
           wellPanel(
-            h4("Inputs"),
-            # textInput("shapeFiles", "Folder containing shape files (.shp)", "D:/Segments_0p75METERS/"),
-            textInput("shapeFiles", "Folder containing shape files (.shp)", "D:/notfound/"),
-            textInput("imageFiles", "Folder containing imagery files (.tif)", "C:/Users/bdrye/Downloads/NAIP_2020/NAIP_4Band_2020/imagery"),
-          ),
-          wellPanel(
-            h4("Configuration"),
-            textInput("sampleSize", "Sample size", "30"),
-            sliderInput("margin",
-                        "Margin:",
-                        min = 10,
-                        max = 30,
-                        value = 20),
-          ),
-          wellPanel(
-            h4("Outputs"),
-            textInput("outputFolder", "Output folder (cropped images and mortality.csv)", "C:/Users/bdrye/Downloads/croppedImages/"),
-          ),
-          
-            
-          fluidRow(
-            "Step 1: ",
-            actionButton("createImages", "Preprocess Imagery"),
+            h4("Input Folder"),
+            textInput("outputFolder", "Folder containing mortality.csv and .png files", "D:/testSmall/step2/")
           ),
           fluidRow(
             textOutput("csvPath"),
-            "Step 2: ",
-            actionButton("loadCsv", "Load mortality.csv"),
-            #textOutput("croppedImagePath")
+            actionButton("loadCsv", "Load mortality.csv")
           )
         ),
 
@@ -56,15 +33,6 @@ shinyUI(fluidPage(
           fluidPage(
             fluidRow(
               imageOutput("showCroppedImage")
-            ),
-            fluidRow(
-              wellPanel(
-                textOutput("croppedImageIndex"),
-                actionButton("firstImage", "First"),
-                actionButton("previousImage", "Prev"),
-                actionButton("nextImage", "Next"),
-                actionButton("lastImage", "Last")
-              )
             ),
             fluidRow(
               wellPanel(
@@ -92,18 +60,30 @@ shinyUI(fluidPage(
                               "Unknown" = "Unknown",
                               "Yellowing tree, multiple" = "yellowing_tree_multiple",
                               "Yellowing tree, recent dead" = "yellowing_tree_recent_dead")),
-                selectInput("nadir", "Nadir",
-                            c("On" = "on", "Tilt" = "tilt", "Off" = "off")),
-                selectInput("error", "Error",
-                            c("Main, Oversegmentation" = "main_oversegmentation", "Associate, Oversegmentation" = "associate_oversegmentaion")),
-                actionButton("saveMortality", "Update mortality.csv"),
+                fluidRow(
+                  column(3, 
+                    radioButtons("nadir", "Nadir",
+                             c("On" = "on", "Tilt" = "tilt", "Off" = "off")),
+                  ),
+                  column(9, 
+                    radioButtons("error", "Error",
+                            c("Main, Oversegmentation" = "main_oversegmentation", "Associate, Oversegmentation" = "associate_oversegmentaion"))
+                  )
+                ),
+                actionButton("saveMortality", "Update mortality.csv")
               )
             ),
-            # fluidRow(
-            #   wellPanel(
-            #     dataTableOutput("csvTable"),
-            #   )
-            # )
+            fluidRow(
+              wellPanel(
+                textOutput("croppedImageIndex"),
+                textOutput("croppedImagePath"),
+                actionButton("firstImage", "First"),
+                actionButton("previousImage", "Prev"),
+                actionButton("nextImage", "Next"),
+                actionButton("lastImage", "Last")
+              )
+            )
+            
           )
         )
     )
