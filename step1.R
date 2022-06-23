@@ -38,7 +38,7 @@ listOfBasinMapFiles = list.files(path = shapeFolder, pattern = "\\Basin_Map.img$
 listOfIntensityFiles = list.files(path = shapeFolder, pattern = "\\INT_GE_2m_0p75METERS.img$", full.names = TRUE, ignore.case = TRUE)
 
 
-elevationRast = rast()
+elevationRast = rast(elevationFile)
 
 listOfPolygonFiles
 listOfHighPointFiles
