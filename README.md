@@ -1,7 +1,9 @@
 # TAO-Classification-Tool
 
-Classify Tree Approximate Objects (TAO) as live/dead. 
+Classify Tree Approximate Objects (TAO) as live/dead, etc.
 
+Note: to test the classifier UI, you can skip steps 1 and 2 by using the sample output data in the sampleStep2data.zip file. 
+Unzip the file, then skip to Step 3. 
 ## Copy data files to local computer  
 
 ### Shapefiles (.shp)  
