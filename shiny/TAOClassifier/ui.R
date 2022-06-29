@@ -46,6 +46,7 @@ shinyUI(fluidPage(
                               "Live tree" = "live_tree",
                               "Live understory vegetation/small trees" = "live_understory_vegetation_small_trees",
                               "Live tree, multiple" = "live_tree_multiple",
+                              "Missing", "missing",
                               "Mixed gray phase and live trees" = "mixed_gray_phase_and_live_trees",
                               "Mixed yellow/red phase and live trees" = "mixed_yellow_red_phase_and_live_trees",
                               "Other" = "other",
