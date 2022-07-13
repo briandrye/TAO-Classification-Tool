@@ -2,6 +2,35 @@
 
 Classify Tree Approximate Objects (TAO) as live/dead, etc.
 
+ shapeFolder = "D:/Segments_0p75METERS/"
+ elevationFile = "D:/TopoMetrics_30METERS/topo_elevation_15M_30METERS.img"
+     │
+     │
+     │
+┌────▼─────┐
+│ step1.R  │
+└────┬─────┘
+     │
+     ▼
+ D:\step1\*.csv
+     │
+┌────▼─────┐
+│ step2.R  │
+└────┬─────┘
+     │
+     ▼
+ D:\step2\*.png and mortality.csv
+     │                   ▲
+     ▼                   │
+┌───────────┐            │
+│ TAO       │            │
+│ Tool      │            │
+│           ├────────────┘
+│           │ updates
+│           │
+│           │
+└───────────┘
+
 Note: to test the classifier UI, you can skip steps 1 and 2 by using the sample output data in the sampleStep2data.zip file. 
 Unzip the file, then skip to Step 3. 
 ## Copy data files to local computer  
